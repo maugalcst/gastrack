@@ -141,10 +141,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('¿No tienes cuenta?', style: GoogleFonts.inter(color: Color(0xFF343A40), fontSize: 16)),
+        Text('¿Olvidaste tu contraseña?', style: GoogleFonts.inter(color: Color(0xFF343A40), fontSize: 16)),
         TextButton(
           onPressed: () {},
-          child: Text('Regístrate', style: GoogleFonts.inter(color: Colors.orange, fontSize: 16)),
+          child: Text('Recuperar Contraseña', style: GoogleFonts.inter(color: Colors.orange, fontSize: 16)),
         ),
       ],
     );

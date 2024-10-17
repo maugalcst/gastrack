@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class FuelReportFormScreen extends StatefulWidget {
   @override
@@ -8,6 +11,8 @@ class FuelReportFormScreen extends StatefulWidget {
 class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  final ImagePicker _picker = ImagePicker();
+  XFile? _image; // Variable para almacenar la imagen seleccionada
 
   // Controladores de texto para validación
   final TextEditingController _driverController = TextEditingController();
@@ -85,6 +90,7 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          //Texto 2
           Text(
             'Registro de Gasolina',
             style: TextStyle(
@@ -94,6 +100,7 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
             ),
           ),
           SizedBox(height: 8),
+          //texto 3
           Text(
             'Rellena todo lo que se te pide, ten el ticket a la mano y el odómetro cerca',
             style: TextStyle(
@@ -110,8 +117,8 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
     );
   }
 
-  // Campo de texto personalizado
-  Widget _buildTextField(String label, String hint, TextEditingController controller) {
+  // Textbox
+  Widget _buildTextField2(String label, String hint, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -143,21 +150,87 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
     );
   }
 
-  // Botón de continuar
+  // Textbox
+  Widget _buildTextField(String label, String hint, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30), // Bordes semicirculares
+          ),
+          child: TextField(
+            controller: controller,
+            onChanged: (value) {
+              setState(() {}); // Actualiza el estado cuando cambia el texto
+            },
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  //Boton continuar
   Widget _buildContinueButton() {
+    return Container(
+      padding: EdgeInsets.all(16.0),
+      color: Colors.transparent,
+      child: ElevatedButton(
+        onPressed: _canMoveTo(_currentPage + 1) ? () {
+          if (_currentPage < 4) {
+            _pageController.nextPage(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        } : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFFFF6A00), // Color naranja
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 16),
+          minimumSize: Size(double.infinity, 50), // Botón de ancho completo
+        ),
+        child: Text(
+          'Continuar',
+          style: TextStyle(fontSize: 18, color: Colors.white), // Color del texto
+        ),
+      ),
+    );
+  }
+
+  // Botón de continuar
+  Widget _buildContinueButton2() {
     return Container(
       padding: EdgeInsets.all(16.0),
       color: Colors.transparent,
       child: ElevatedButton(
         onPressed: _canMoveTo(_currentPage + 1)
             ? () {
-                if (_currentPage < 4) {
-                  _pageController.nextPage(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              }
+          if (_currentPage < 4) {
+            _pageController.nextPage(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        }
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: Color(0xFFFF6A00), // Botón con color naranja
@@ -196,20 +269,20 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
     return GestureDetector(
       onTap: () {
         if (_canMoveTo(stepIndex)) {
-          _pageController.animateToPage(stepIndex, duration: Duration(milliseconds: 300), curve: Curves.ease);
+          //_pageController.animateToPage(stepIndex, duration: Duration(milliseconds: 300), curve: Curves.ease);
         }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: _currentPage == stepIndex ? Colors.orange : Colors.white,
+          color: Colors.orange,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.orange, width: 2),
+          border: Border.all(color: _currentPage == stepIndex ? Colors.white : Colors.orange, width: 4), // Cambiar aquí
         ),
         padding: EdgeInsets.all(8),
         child: Icon(
           icon,
           size: 30,
-          color: _currentPage == stepIndex ? Colors.white : Colors.orange,
+          color: Colors.white, // Cambiar aquí
         ),
       ),
     );
@@ -217,39 +290,64 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
 
   // Lógica de validación para los pasos
   bool _canMoveTo(int stepIndex) {
-    if (stepIndex == 1 && (_driverController.text.isEmpty || _unitController.text.isEmpty)) {
-      return false; // Bloquear si no se ha llenado el formulario del conductor
+    // Asegúrate de que la lógica aquí sea correcta
+    if (stepIndex == 1) {
+      return _driverController.text.isNotEmpty && _unitController.text.isNotEmpty;
     }
-    return true;
+    if (stepIndex == 2)
+    {
+      return (_image != null);
+    }
+    return false;
   }
 
-
-
-
-
-
-
-
-
+  //GASOLINA
 
   // Slide 2: Foto del ticket de gasolina
   Widget _buildTicketPhotoSlide() {
+    double height = MediaQuery.of(context).size.height * 0.3;
+    double width = MediaQuery.of(context).size.width * 0.85;
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.symmetric(vertical: height * 0.1, horizontal: width * 0.1),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.camera_alt, size: 100, color: Color(0xFF002241)),
-          SizedBox(height: 16),
-          Text(
-            'Tome una foto al ticket de compra de gasolina',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
+          // Parte superior con dos textos
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Registro de gasolina',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Tome una foto del ticket de compra de gasolina, asegúrese de que sea legible y clara.',
+                style: TextStyle(fontSize: 18, color: Colors.white70),
+              ),
+            ],
+          ),
+          SizedBox(height: 40),
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+            height: height * 0.9,
+            width: width * 0.9,
+            decoration: BoxDecoration(
+              color: Color(0xFF000817), // Color azul oscuro
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: _image != null
+                ? Image.file(
+              File(_image!.path),
+              fit: BoxFit.cover,
+            )
+                : _buildCameraButton(height * 0.7, width),
           ),
         ],
       ),
     );
   }
+
 
   // Slide 3: Detalles del ticket de gasolina
   Widget _buildTicketDetailsSlide() {
@@ -281,6 +379,8 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
       ),
     );
   }
+
+  //ODOMETRO
 
   // Slide 4: Foto del odómetro
   Widget _buildOdometerPhotoSlide() {
@@ -342,6 +442,59 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
       ),
     );
   }
+
+  // Boton camara:
+  Widget _buildCameraButton(double height, double width)
+  {
+    double icon_size = height*0.5;
+    double separation = height*0.05;
+    return Padding(
+        padding: EdgeInsets.symmetric(vertical: 0, horizontal: width*0.1),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+            onPressed: () async {
+              final XFile? image = await _picker.pickImage(
+                source: ImageSource.camera,
+                imageQuality: 100,
+              );
+              setState(() {
+                _image = image;
+              });
+              if (image != null) {
+                print("Imagen capturada: ${image.path}");
+              } else {
+                print("No se tomó ninguna imagen");
+              }
+              },
+              icon:  Icon(Icons.camera_alt, color: Colors.grey, size: icon_size),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF000817),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16), // Bordes redondeados
+        ),
+              ),
+            ),
+            SizedBox(height: separation),
+            AutoSizeText(
+              'Presione la camara para tomar una foto del ticket',
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.grey,
+              ),
+              maxLines: 2,
+              minFontSize: 6,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            )
+          ],
+        ),
+    );
+  }
+
+
+  //BOTONES DE NAVEGACION
 
   // Paso 3: Crear botones de navegación
   Widget _buildNavigationButtons() {
