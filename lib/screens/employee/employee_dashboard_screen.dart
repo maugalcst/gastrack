@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gastrack_uanl/screens/employee/fuel_report_form_screen.dart';
 
-
 class EmployeeDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -10,7 +9,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
         preferredSize: Size.fromHeight(100), // Ajuste de altura de la barra superior
         child: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: Color(0xFF002241),
+          backgroundColor: Color(0xFF07154C),
           flexibleSpace: Padding(
             padding: const EdgeInsets.only(top: 40.0), // Espacio superior para ajustar el logo
             child: Center(
@@ -22,7 +21,6 @@ class EmployeeDashboardScreen extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   // Estilo para simular el delineado
-                  
                   decoration: TextDecoration.underline,
                   decorationColor: Colors.orange,
                   decorationThickness: 2,
@@ -43,7 +41,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF002241),
+                  color: Color(0xFF07154C), // Color reemplazado
                 ),
               ),
               SizedBox(height: 16),
@@ -56,14 +54,14 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline, color: Color(0xFF002241)),
+                    Icon(Icons.info_outline, color: Color(0xFF07154C)), // Color reemplazado
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Recuerda que para el registro es necesario tener ticket de gasolinera a la mano, así como mostrar el odómetro de la unidad.',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF002241),
+                          color: Color(0xFF07154C), // Color reemplazado
                         ),
                       ),
                     ),
@@ -81,7 +79,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 icon: Icon(Icons.assignment_outlined),
                 label: Text('Registrar reporte'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF002241),
+                  backgroundColor: Color(0xFF07154C), // Color reemplazado
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                   textStyle: TextStyle(fontSize: 16),
@@ -105,7 +103,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF002241),
+                            color: Color(0xFF07154C), // Color reemplazado
                           ),
                         ),
                         SizedBox(height: 4),
@@ -125,7 +123,10 @@ class EmployeeDashboardScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // Mostrar pestaña emergente con información adicional
+                        _showInfoDialog(context);
+                      },
                       icon: Icon(Icons.info_outline),
                       tooltip: 'Ver detalles del rendimiento',
                     ),
@@ -138,7 +139,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF002241),
+                  color: Color(0xFF07154C), // Color reemplazado
                 ),
               ),
               SizedBox(height: 8),
@@ -162,7 +163,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 onPressed: () {},
                 child: Text('Ver todos mis reportes'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF002241),
+                  backgroundColor: Color(0xFF07154C), // Color reemplazado
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                   textStyle: TextStyle(fontSize: 16),
@@ -172,6 +173,38 @@ class EmployeeDashboardScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  // Método para mostrar la pestaña emergente
+  void _showInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Aquí usted registrará el rendimiento diario de su unidad, este rendimiento se calcula usando el kilometraje, litros de gasolina, etc. Se creará un reporte con los datos que ingrese y se calculará el rendimiento.',
+                style: TextStyle(fontSize: 16, color: Color(0xFF07154C)), // Color reemplazado
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Cerrar la ventana
+                },
+                icon: Icon(Icons.close, color: Colors.grey),
+                tooltip: 'Cerrar',
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

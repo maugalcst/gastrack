@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "612244537390",
+    "project_id": "gastrackfime",
+    "storage_bucket": "gastrackfime.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612244537390:android:53975353db2b2a613a1fbf",
+        "android_client_info": {
+          "package_name": "com.example.gastrack_uanl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP2kep0gtpSlfODc9fMraZpMxfXmJM6IQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
