@@ -77,13 +77,16 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
       Reference storageRef = FirebaseStorage.instance.ref().child('images/$fileName');
       UploadTask uploadTask = storageRef.putFile(File(filePath));
       TaskSnapshot snapshot = await uploadTask;
+      
+      // Obtener la URL de descarga
       String downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Error al subir la imagen: $e');
+      print("Error subiendo la imagen: $e");
       return '';
     }
   }
+
 
   // Función para guardar el reporte en Firestore
   Future<void> saveReportToFirestore({

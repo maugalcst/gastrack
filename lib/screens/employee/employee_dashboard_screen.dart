@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gastrack_uanl/screens/employee/fuel_report_form_screen.dart';
+import 'package:intl/intl.dart'; // Para dar formato a la fecha
 
-class EmployeeDashboardScreen extends StatelessWidget {
+class EmployeeDashboardScreen extends StatefulWidget {
+  @override
+  _EmployeeDashboardScreenState createState() => _EmployeeDashboardScreenState();
+}
+
+class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,7 +27,6 @@ class EmployeeDashboardScreen extends StatelessWidget {
                   fontSize: 36,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  // Estilo para simular el delineado
                   decoration: TextDecoration.underline,
                   decorationColor: Colors.orange,
                   decorationThickness: 2,
@@ -41,7 +47,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF07154C), // Color reemplazado
+                  color: Color(0xFF07154C),
                 ),
               ),
               SizedBox(height: 16),
@@ -54,14 +60,14 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline, color: Color(0xFF07154C)), // Color reemplazado
+                    Icon(Icons.info_outline, color: Color(0xFF07154C)),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Recuerda que para el registro es necesario tener ticket de gasolinera a la mano, así como mostrar el odómetro de la unidad.',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF07154C), // Color reemplazado
+                          color: Color(0xFF07154C),
                         ),
                       ),
                     ),
@@ -69,22 +75,47 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 16),
-              ElevatedButton.icon(
+              // Botón de "Registrar reporte" más grande con gradiente
+              ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => FuelReportFormScreen()),
                   );
                 },
-                icon: Icon(Icons.assignment_outlined),
-                label: Text('Registrar reporte'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF07154C), // Color reemplazado
-                  foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                  textStyle: TextStyle(fontSize: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  minimumSize: Size(double.infinity, 50), // Para que ocupe todo el ancho
+                ).copyWith(
+                  backgroundColor: MaterialStateProperty.all(Colors.transparent),
+                  shadowColor: MaterialStateProperty.all(Colors.transparent),
+                ),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color.fromARGB(255, 9, 28, 101), Color.fromARGB(255, 152, 67, 7)], // Azul a Naranja
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Text(
+                      'Registrar reporte',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 23,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+
               SizedBox(height: 16),
               Container(
                 padding: EdgeInsets.all(16),
@@ -103,7 +134,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF07154C), // Color reemplazado
+                            color: Color(0xFF07154C),
                           ),
                         ),
                         SizedBox(height: 4),
@@ -115,7 +146,7 @@ class EmployeeDashboardScreen extends StatelessWidget {
                     ),
                     Spacer(),
                     Text(
-                      '82.5',
+                      '82.5', // Placeholder
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -124,7 +155,6 @@ class EmployeeDashboardScreen extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: () {
-                        // Mostrar pestaña emergente con información adicional
                         _showInfoDialog(context);
                       },
                       icon: Icon(Icons.info_outline),
@@ -139,31 +169,63 @@ class EmployeeDashboardScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF07154C), // Color reemplazado
+                  color: Color(0xFF07154C),
                 ),
               ),
               SizedBox(height: 8),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: 3,
-                itemBuilder: (context, index) {
-                  return Card(
-                    elevation: 2,
-                    child: ListTile(
-                      leading: Icon(Icons.event_note),
-                      title: Text('Fecha: 21/09/24'),
-                      subtitle: Text('Unidad: N51'),
-                    ),
+              // Muestra los últimos 3 reportes ordenados por fecha
+              StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection('reports')
+                    .orderBy('date', descending: true) // Orden por fecha descendente
+                    .limit(3) // Limitar a los últimos 3 reportes
+                    .snapshots(),
+                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Text('No hay reportes registrados.');
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: snapshot.data!.docs.length,
+                    itemBuilder: (context, index) {
+                      var report = snapshot.data!.docs[index];
+                      var reportData = report.data() as Map<String, dynamic>;
+                      var date = (reportData['date'] as Timestamp).toDate();
+                      return Card(
+                        elevation: 2,
+                        child: ListTile(
+                          leading: Icon(Icons.event_note),
+                          title: Text('Fecha: ${DateFormat('dd/MM/yy').format(date)}'),
+                          subtitle: Text('Unidad: ${reportData['unit_number']}'),
+                          trailing: IconButton(
+                            icon: Icon(Icons.remove_red_eye),
+                            onPressed: () {
+                              _showReportDetails(context, reportData);
+                            },
+                            tooltip: 'Ver reporte',
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AllReportsScreen()),
+                  );
+                },
                 child: Text('Ver todos mis reportes'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF07154C), // Color reemplazado
+                  backgroundColor: Color(0xFF07154C),
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                   textStyle: TextStyle(fontSize: 16),
@@ -176,7 +238,50 @@ class EmployeeDashboardScreen extends StatelessWidget {
     );
   }
 
-  // Método para mostrar la pestaña emergente
+  void _showReportDetails(BuildContext context, Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Detalles del Reporte',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                Text('Fecha: ${DateFormat('dd/MM/yy').format(report['date'].toDate())}'),
+                Text('Unidad: ${report['unit_number']}'),
+                Text('Kilometraje: ${report['odometer_reading']}'),
+                Text('Litros de Gasolina: ${report['gasoline_liters']}'),
+                SizedBox(height: 10),
+                // Mostrar la imagen del ticket de gasolina
+                Text('Ticket de Gasolina:'),
+                Image.network(report['gasoline_receipt_image_url']),
+                SizedBox(height: 10),
+                // Mostrar la imagen del odómetro
+                Text('Odómetro:'),
+                Image.network(report['odometer_image_url']),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cerrar'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showInfoDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -189,20 +294,134 @@ class EmployeeDashboardScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Aquí usted registrará el rendimiento diario de su unidad, este rendimiento se calcula usando el kilometraje, litros de gasolina, etc. Se creará un reporte con los datos que ingrese y se calculará el rendimiento.',
-                style: TextStyle(fontSize: 16, color: Color(0xFF07154C)), // Color reemplazado
+                'Aquí usted registrará el rendimiento diario de su unidad, este rendimiento se calcula usando el kilometraje, litros de gasolina, etc.',
+                style: TextStyle(fontSize: 16, color: Color(0xFF07154C)),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 20),
               IconButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Cerrar la ventana
+                  Navigator.of(context).pop();
                 },
                 icon: Icon(Icons.close, color: Colors.grey),
                 tooltip: 'Cerrar',
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+// Pantalla para ver todos los reportes con filtros
+class AllReportsScreen extends StatefulWidget {
+  @override
+  _AllReportsScreenState createState() => _AllReportsScreenState();
+}
+
+class _AllReportsScreenState extends State<AllReportsScreen> {
+  String _selectedOrder = 'Fecha';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Todos los reportes'),
+        backgroundColor: Color(0xFF07154C),
+      ),
+      body: Column(
+        children: [
+          DropdownButton<String>(
+            value: _selectedOrder,
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedOrder = newValue!;
+              });
+            },
+            items: <String>['Fecha', 'Unidad'].map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+          ),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('reports')
+                  .orderBy(_selectedOrder == 'Fecha' ? 'date' : 'unit_number', descending: true)
+                  .snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Text('No hay reportes registrados.');
+                }
+
+                return ListView.builder(
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    var report = snapshot.data!.docs[index];
+                    var reportData = report.data() as Map<String, dynamic>;
+                    var date = (reportData['date'] as Timestamp).toDate();
+                    return Card(
+                      elevation: 2,
+                      child: ListTile(
+                        leading: Icon(Icons.event_note),
+                        title: Text('Fecha: ${DateFormat('dd/MM/yy').format(date)}'),
+                        subtitle: Text('Unidad: ${reportData['unit_number']}'),
+                        trailing: IconButton(
+                          icon: Icon(Icons.remove_red_eye),
+                          onPressed: () {
+                            _showReportDetails(context, reportData);
+                          },
+                          tooltip: 'Ver reporte',
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReportDetails(BuildContext context, Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        var date = (report['date'] as Timestamp).toDate();
+        return AlertDialog(
+          title: Text('Detalles del Reporte'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Fecha: ${DateFormat('dd/MM/yy').format(date)}'),
+              Text('Unidad: ${report['unit_number']}'),
+              Text('Kilometraje: ${report['odometer_reading']}'),
+              Text('Litros de Gasolina: ${report['gasoline_liters']}'),
+              SizedBox(height: 10),
+              Text('Ticket de Gasolina:'),
+              Image.network(report['gasoline_receipt_image_url']),
+              SizedBox(height: 10),
+              Text('Odómetro:'),
+              Image.network(report['odometer_image_url']),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cerrar'),
+            ),
+          ],
         );
       },
     );
