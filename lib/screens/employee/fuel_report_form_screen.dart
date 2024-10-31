@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gastrack_uanl/screens/employee/employee_dashboard_screen.dart';
+import 'package:gastrack_uanl/screens/employee/loading_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:firebase_storage/firebase_storage.dart'; // Firebase Storage
@@ -115,56 +116,67 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
   }
 
   // Botón continuar único
-  Widget _buildContinueButton(double height, double width) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-      width: width,
-      height: height,
-      color: Colors.transparent,
-      child: ElevatedButton(
-        onPressed: _canMoveTo(_currentPage + 1) ? () async {
-          if (_currentPage < 4) {
-            _pageController.nextPage(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-            if (_currentPage == 3) {
-              button_text = "Subir reporte";
-            } else {
-              button_text = "Continuar";
-            }
+Widget _buildContinueButton(double height, double width) {
+  return Container(
+    padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+    width: width,
+    height: height,
+    color: Colors.transparent,
+    child: ElevatedButton(
+      onPressed: _canMoveTo(_currentPage + 1) ? () async {
+        if (_currentPage < 4) {
+          _pageController.nextPage(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+          if (_currentPage == 3) {
+            button_text = "Subir reporte";
           } else {
-            // Subir imágenes a Firebase Storage y guardar el reporte
-            String gasolineReceiptUrl = await uploadImageToStorage(_image!.path, 'receipt_${_unitController.text}');
-            String odometerImageUrl = await uploadImageToStorage(_image2!.path, 'odometer_${_unitController.text}');
-
-            await saveReportToFirestore(
-              employeeName: _driverController.text,
-              unitNumber: _unitController.text,
-              odometerReading: int.parse(_odometerController.text),
-              gasolineLiters: int.parse(_litersController.text),
-              gasolineReceiptImageUrl: gasolineReceiptUrl,
-              odometerImageUrl: odometerImageUrl,
-            );
-
-            // Navega de regreso al dashboard
-            Navigator.push(context, MaterialPageRoute(builder: (context) => EmployeeDashboardScreen()));
+            button_text = "Continuar";
           }
-        } : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFFF6A00), // Color naranja
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 0),
+        } else {
+          // Navega a la pantalla de carga
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => LoadingScreen()),
+          );
+
+          // Subir imágenes a Firebase Storage y guardar el reporte
+          String gasolineReceiptUrl = await uploadImageToStorage(_image!.path, 'receipt_${_unitController.text}');
+          String odometerImageUrl = await uploadImageToStorage(_image2!.path, 'odometer_${_unitController.text}');
+
+          await saveReportToFirestore(
+            employeeName: _driverController.text,
+            unitNumber: _unitController.text,
+            odometerReading: int.parse(_odometerController.text),
+            gasolineLiters: int.parse(_litersController.text),
+            gasolineReceiptImageUrl: gasolineReceiptUrl,
+            odometerImageUrl: odometerImageUrl,
+          );
+
+          // Elimina la pantalla de carga y navega al dashboard
+          Navigator.of(context).pop(); // Cierra la pantalla de carga
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => EmployeeDashboardScreen()),
+          );
+        }
+      } : null,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Color(0xFFFF6A00), // Color naranja
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
         ),
-        child: Text(
-          button_text,
-          style: TextStyle(fontSize: 18, color: Colors.white),
-        ),
+        padding: EdgeInsets.symmetric(vertical: 0),
       ),
-    );
-  }
+      child: Text(
+        button_text,
+        style: TextStyle(fontSize: 18, color: Colors.white),
+      ),
+    ),
+  );
+}
+
 
 
   Widget _buildUpperLogo(double height)
