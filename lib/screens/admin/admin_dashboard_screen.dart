@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Asegúrate de importar intl para el formato de fecha
 
 class AdminDashboardScreen extends StatelessWidget {
   @override
@@ -29,106 +30,101 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          // Fondo con degradado
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color.fromARGB(255, 232, 236, 255), // Azul tenue superior
-                  Colors.white, // Blanco inferior
+      body: SingleChildScrollView( // Añadido SingleChildScrollView
+        child: Stack(
+          children: [
+            // Fondo con degradado
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color.fromARGB(255, 232, 236, 255), // Azul tenue superior
+                    Colors.white, // Blanco inferior
+                  ],
+                ),
+              ),
+            ),
+            // Contenido del dashboard
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Panel de rendimiento general
+                  Text(
+                    'Panel de \nAdministrador',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF07154C),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Observa el rendimiento general e individual de las unidades, así como los reportes generados e historiales, así como detalles analíticos.',
+                    style: TextStyle(
+                      fontSize: 19,
+                      color: Color(0xFF07154C),
+                    ),
+                  ),
+                  SizedBox(height: 24), // Más espacio entre elementos
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center, // Centrar horizontalmente
+                      children: [
+                        Text(
+                          '82.5', // Este valor cambiará dinámicamente
+                          style: TextStyle(
+                            fontSize: 48, // Tamaño más grande
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                        SizedBox(width: 8), // Espacio entre el número y el icono
+                        IconButton(
+                          onPressed: () {
+                            // Mostrar pestaña emergente con información adicional
+                            _showInfoDialog(context);
+                          },
+                          icon: Icon(Icons.info_outline),
+                          tooltip: 'Información sobre rendimiento',
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  // Detalles del rendimiento
+                  Text(
+                    'Detalles',
+                    style: TextStyle(
+                      fontSize: 22, // Aumentamos el tamaño
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF07154C),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  _buildDetailCard('Total de unidades', '6'),
+                  _buildDetailCard('Kilometraje total', '45,000'),
+                  _buildDetailCard('Litros consumidos', '3,500'),
+                  _buildDetailCard('Costo total', '75,000'),
                 ],
               ),
             ),
-          ),
-          // Contenido del dashboard
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Panel de rendimiento general
-                Text(
-                  'Panel de \nAdministrador',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF07154C),
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Observa el rendimiento general e individual de las unidades, así como los reportes generados e historiales, así como detalles analíticos.',
-                  style: TextStyle(
-                    fontSize: 19,
-                    color: Color(0xFF07154C),
-                  ),
-                ),
-                SizedBox(height: 24), // Más espacio entre elementos
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Rendimiento General',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF07154C),
-                        ),
-                      ),
-                      SizedBox(height: 8), // Espacio entre el texto y el valor
-                      Text(
-                        '82.5', // Este valor cambiará dinámicamente
-                        style: TextStyle(
-                          fontSize: 48, // Tamaño más grande
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          // Mostrar pestaña emergente con información adicional
-                          _showInfoDialog(context);
-                        },
-                        icon: Icon(Icons.info_outline),
-                        tooltip: 'Información sobre rendimiento',
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 24),
-                // Detalles del rendimiento
-                Text(
-                  'Detalles',
-                  style: TextStyle(
-                    fontSize: 22, // Aumentamos el tamaño
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF07154C),
-                  ),
-                ),
-                SizedBox(height: 16),
-                _buildDetailCard('Total de unidades', '6'),
-                _buildDetailCard('Kilometraje total', '45,000'),
-                _buildDetailCard('Litros consumidos', '3,500'),
-                _buildDetailCard('Costo total', '75,000'),
-              ],
+            // Botón de menú en la esquina superior derecha debajo de la barra azul
+            Positioned(
+              top: 10, // Ajusta esta distancia para colocar el botón debajo del AppBar
+              right: 10, // Lo colocamos en la esquina derecha
+              child: IconButton(
+                icon: Icon(Icons.menu, color: Color(0xFF07154C), size: 28),
+                onPressed: () {
+                  _showMenu(context); // Mostrar menú lateral
+                },
+              ),
             ),
-          ),
-          // Botón de menú en la esquina superior derecha debajo de la barra azul
-          Positioned(
-            top: 10, // Ajusta esta distancia para colocar el botón debajo del AppBar
-            right: 10, // Lo colocamos en la esquina derecha
-            child: IconButton(
-              icon: Icon(Icons.menu, color: Color(0xFF07154C), size: 28),
-              onPressed: () {
-                _showMenu(context); // Mostrar menú lateral
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

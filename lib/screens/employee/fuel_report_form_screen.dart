@@ -35,6 +35,7 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
     double slider_w = width * 0.8;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           // Fondo de la aplicación con el color azul rey
@@ -466,7 +467,7 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
   Widget _buildStepperIcon(IconData icon, int stepIndex) {
     return GestureDetector(
       onTap: () {
-        if (_canMoveTo(stepIndex)) {
+        if (_currentPage >= stepIndex) {
           _pageController.animateToPage(stepIndex, duration: Duration(milliseconds: 300), curve: Curves.ease);
         }
       },
@@ -474,13 +475,13 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
         decoration: BoxDecoration(
           color: Colors.orange,
           shape: BoxShape.circle,
-          border: Border.all(color: _shouldLight(_currentPage, stepIndex) ? Colors.white : Colors.orange, width: 4), // Cambiar aquí
+          border: Border.all(color: _currentPage >= stepIndex ? Colors.white : Colors.orange, width: 4),
         ),
         padding: EdgeInsets.all(8),
         child: Icon(
           icon,
           size: 30,
-          color: Colors.white, // Cambiar aquí
+          color: Colors.white,
         ),
       ),
     );
