@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gastrack_uanl/screens/admin/report_overview_screen.dart';
+import 'package:gastrack_uanl/screens/admin/performance_screen.dart';
 import 'package:intl/intl.dart'; // Asegúrate de importar intl para el formato de fecha
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -194,32 +196,43 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  // Función para mostrar el menú lateral
   void _showMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildMenuItem(context, 'Panel principal', Icons.home, () {
-                Navigator.pop(context);
-              }),
-              _buildMenuItem(context, 'Rendimiento', Icons.show_chart, () {
-                Navigator.pop(context);
-              }),
-              _buildMenuItem(context, 'Reportes', Icons.receipt_long, () {
-                Navigator.pop(context);
-              }),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  showModalBottomSheet(
+    context: context,
+    builder: (context) {
+      return Container(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildMenuItem(context, 'Panel principal', Icons.home, () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
+              );
+            }),
+            _buildMenuItem(context, 'Rendimiento', Icons.show_chart, () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PerformanceScreen()),
+              );
+            }),
+            _buildMenuItem(context, 'Reportes', Icons.receipt_long, () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ReportOverviewScreen()),
+              );
+            }),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   // Widget para construir cada item del menú
   Widget _buildMenuItem(BuildContext context, String title, IconData icon, VoidCallback onTap) {
