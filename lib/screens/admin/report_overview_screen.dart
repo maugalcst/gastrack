@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gastrack_uanl/screens/admin/report_details_screen.dart';
 
 class ReportOverviewScreen extends StatefulWidget {
   @override
@@ -181,18 +182,24 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
               ),
             ),
             Container(
-              width: 70, // Ancho del botón para hacerlo más compacto
-              height: 40, // Alto del botón
+              width: 70,
+              height: 40,
               child: ElevatedButton(
                 onPressed: () {
-                  // Acción para ver el reporte, se implementará después
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReportDetailsScreen(
+                        employeeEmail: name, // Pasamos el email del empleado
+                      ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 18, 90, 207), // Color del botón "Ver"
+                  backgroundColor: Color.fromARGB(255, 18, 90, 207),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: EdgeInsets.symmetric(vertical: 0), // Ajusta el padding interno
                 ),
                 child: Text(
                   'Ver',
