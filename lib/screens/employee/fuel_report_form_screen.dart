@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:firebase_storage/firebase_storage.dart'; // Firebase Storage
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase Firestore
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FuelReportFormScreen extends StatefulWidget {
   @override
@@ -100,16 +101,25 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
     required String odometerImageUrl,
   }) async {
     try {
-      await FirebaseFirestore.instance.collection('reports').add({
-        'employee_name': employeeName,
-        'unit_number': unitNumber,
-        'odometer_reading': odometerReading,
-        'gasoline_liters': gasolineLiters,
-        'gasoline_receipt_image_url': gasolineReceiptImageUrl,
-        'odometer_image_url': odometerImageUrl,
-        'date': Timestamp.now(),
-      });
-      print('Reporte guardado exitosamente');
+      // Obtiene el email del usuario autenticado
+      String? email = FirebaseAuth.instance.currentUser?.email;
+
+      // Verifica que el email no sea nulo
+      if (email != null) {
+        await FirebaseFirestore.instance.collection('reports').add({
+          'employee_name': employeeName,
+          'unit_number': unitNumber,
+          'odometer_reading': odometerReading,
+          'gasoline_liters': gasolineLiters,
+          'gasoline_receipt_image_url': gasolineReceiptImageUrl,
+          'odometer_image_url': odometerImageUrl,
+          'email': email, // Guarda el email del usuario
+          'date': Timestamp.now(),
+        });
+        print('Reporte guardado exitosamente');
+      } else {
+        print('Error: No se pudo obtener el email del usuario');
+      }
     } catch (e) {
       print('Error al guardar el reporte: $e');
     }
