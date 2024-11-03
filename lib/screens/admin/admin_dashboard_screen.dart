@@ -40,7 +40,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color.fromARGB(255, 232, 236, 255), // Azul tenue superior
+                  Color.fromARGB(255, 209, 217, 255), // Azul tenue superior
                   Colors.white, // Blanco inferior
                 ],
               ),

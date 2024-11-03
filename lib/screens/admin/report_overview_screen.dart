@@ -38,7 +38,6 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,8 +73,8 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color.fromARGB(255, 232, 236, 255),
-                  Colors.white,
+                  Color.fromARGB(255, 209, 217, 255),
+                  const Color.fromARGB(255, 251, 251, 251),
                 ],
               ),
             ),
@@ -87,6 +86,23 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    'Reportes',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF07154C),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Aquí puede observar y descargar los reportes que se han registrado así como historial de reportes de los usuarios.',
+                    style: TextStyle(
+                      fontSize: 19,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
                     'Reportes por conductor',
                     style: TextStyle(
                       fontSize: 22,
@@ -97,7 +113,6 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                   SizedBox(height: 8),
                   _buildTableHeader(),
                   SizedBox(height: 8),
-                  // Lista de emails con botón "Ver"
                   ListView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
@@ -182,7 +197,7 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
               ),
             ),
             Container(
-              width: 70,
+              width: 110,
               height: 40,
               child: ElevatedButton(
                 onPressed: () {
@@ -202,7 +217,7 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                   ),
                 ),
                 child: Text(
-                  'Ver',
+                  'Historial',
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
