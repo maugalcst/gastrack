@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final String employeeEmail;
@@ -15,8 +20,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   List<Map<String, dynamic>> employeeReports = [];
   bool isLoading = true;
 
-  final Color backgroundColor = Color.fromARGB(255, 232, 236, 255); // Fondo con color claro degradado
-  final Color darkBlueColor = Color(0xFF07154C); // Azul oscuro para el texto y los botones
+  final Color backgroundColor = Color.fromARGB(255, 232, 236, 255);
+  final Color darkBlueColor = Color(0xFF07154C);
 
   @override
   void initState() {
@@ -44,6 +49,56 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       });
     }
   }
+
+  Future<void> _downloadCSV(Map<String, dynamic> report) async {
+  // Crea una instancia de DeviceInfoPlugin
+  final deviceInfo = DeviceInfoPlugin();
+  final androidInfo = await deviceInfo.androidInfo;
+
+  // Solicita el permiso de almacenamiento, utilizando el permiso adecuado para Android 11+
+  var status = await (Platform.isAndroid && androidInfo.version.sdkInt >= 30
+      ? Permission.manageExternalStorage.request()
+      : Permission.storage.request());
+
+  if (status.isGranted) {
+    List<List<dynamic>> rows = [];
+
+    // Agregar encabezados
+    rows.add([
+      "Fecha",
+      "Unidad",
+      "Kilometraje",
+      "Litros de Gasolina",
+    ]);
+
+    // Agregar datos del reporte
+    rows.add([
+      DateFormat('dd/MM/yyyy').format(report['date'].toDate()),
+      report['unit_number'],
+      report['odometer_reading'],
+      report['gasoline_liters'],
+    ]);
+
+    String csvData = const ListToCsvConverter().convert(rows);
+
+    // Obtener el directorio de descargas
+    final directory = Directory('/storage/emulated/0/Download');
+    final path = "${directory.path}/reporte_${DateFormat('ddMMyyyy').format(report['date'].toDate())}.csv";
+    final file = File(path);
+
+    await file.writeAsString(csvData);
+    print("Archivo CSV guardado en $path");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Reporte descargado en formato CSV en la carpeta Descargas")),
+    );
+  } else {
+    print("Permiso de almacenamiento denegado.");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Permiso de almacenamiento denegado")),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -74,14 +129,13 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       ),
       body: Stack(
         children: [
-          // Fondo con degradado
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color.fromARGB(255, 209, 217, 255),
+                  backgroundColor,
                   Colors.white,
                 ],
               ),
@@ -93,7 +147,6 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título y descripción
                   Text(
                     'Reportes',
                     style: TextStyle(
@@ -119,8 +172,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                       color: darkBlueColor,
                     ),
                   ),
-                  SizedBox(height: 24), // Espacio adicional entre la descripción y los reportes
-                  // Lista de reportes
+                  SizedBox(height: 24),
                   isLoading
                       ? Center(child: CircularProgressIndicator())
                       : employeeReports.isEmpty
@@ -137,8 +189,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Card(
-                                    color: const Color.fromARGB(255, 255, 255, 255),
-                                    elevation: 0.5,
+                                    color: Colors.white,
+                                    elevation: 2,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -147,7 +199,6 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          // Fecha del reporte
                                           Text(
                                             formattedDate,
                                             style: TextStyle(
@@ -156,7 +207,6 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                                               color: darkBlueColor,
                                             ),
                                           ),
-                                          // Botones de acciones
                                           Row(
                                             children: [
                                               ElevatedButton(
@@ -177,16 +227,16 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                                               ),
                                               SizedBox(width: 8),
                                               Container(
-                                                width: 53,
-                                                height: 45,
+                                                width: 48,
+                                                height: 40,
                                                 decoration: BoxDecoration(
                                                   color: darkBlueColor,
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: IconButton(
                                                   icon: Icon(Icons.download, color: Colors.white),
-                                                  onPressed: () {
-                                                    // Acción para descargar el reporte
+                                                  onPressed: () async {
+                                                    await _downloadCSV(report);
                                                   },
                                                 ),
                                               ),
