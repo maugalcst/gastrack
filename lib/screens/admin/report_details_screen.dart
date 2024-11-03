@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final String employeeEmail;
@@ -22,19 +23,11 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
 
   Future<void> _fetchEmployeeReports() async {
     try {
-      print('Fetching reports for employee email: ${widget.employeeEmail}');
-      
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('reports')
           .where('email', isEqualTo: widget.employeeEmail)
           .orderBy('date', descending: true)
           .get();
-
-      if (snapshot.docs.isEmpty) {
-        print('No reports found for the specified email.');
-      } else {
-        print('Reports found: ${snapshot.docs.length}');
-      }
 
       setState(() {
         employeeReports = snapshot.docs
@@ -48,6 +41,52 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         isLoading = false;
       });
     }
+  }
+
+  void _showReportDetails(BuildContext context, Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Detalles del Reporte',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                Text('Fecha: ${DateFormat('dd/MM/yy').format(report['date'].toDate())}'),
+                Text('Unidad: ${report['unit_number']}'),
+                Text('Kilometraje: ${report['odometer_reading']} km'),
+                Text('Litros de Gasolina: ${report['gasoline_liters']} L'),
+                SizedBox(height: 10),
+                Text('Ticket de Gasolina:'),
+                report['gasoline_receipt_image_url'] != null
+                    ? Image.network(report['gasoline_receipt_image_url'])
+                    : Text('No disponible'),
+                SizedBox(height: 10),
+                Text('Odómetro:'),
+                report['odometer_image_url'] != null
+                    ? Image.network(report['odometer_image_url'])
+                    : Text('No disponible'),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cerrar'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -91,33 +130,29 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Fecha: ${report['date'].toDate().toLocal()}',
+                              DateFormat('dd/MM/yyyy').format(report['date'].toDate()),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF07154C),
                               ),
                             ),
-                            SizedBox(height: 8),
-                            _buildDetailRow('Unidad', report['unit_number'] ?? 'Sin número'),
-                            _buildDetailRow('Litros de Gasolina', '${report['gasoline_liters'] ?? 0} L'),
-                            _buildDetailRow('Odómetro', '${report['odometer_reading'] ?? 0} km'),
-                            SizedBox(height: 16),
                             Row(
                               children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      // Acción para ver detalles del reporte
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color(0xFF07154C),
-                                    ),
-                                    child: Text('Ver reporte'),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    _showReportDetails(context, report);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF07154C),
+                                  ),
+                                  child: Text(
+                                    'Ver reporte',
+                                    style: TextStyle(color: Colors.white),
                                   ),
                                 ),
                                 SizedBox(width: 8),
@@ -135,37 +170,6 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                     );
                   },
                 ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF07154C),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF07154C),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
