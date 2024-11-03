@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:csv/csv.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
 
 class ReportDetailsScreen extends StatefulWidget {
   final String employeeEmail;
@@ -50,48 +53,72 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     }
   }
 
-  Future<void> _downloadCSV(Map<String, dynamic> report) async {
-  // Crea una instancia de DeviceInfoPlugin
+  Future<void> _downloadExcel(Map<String, dynamic> report) async {
   final deviceInfo = DeviceInfoPlugin();
   final androidInfo = await deviceInfo.androidInfo;
 
-  // Solicita el permiso de almacenamiento, utilizando el permiso adecuado para Android 11+
   var status = await (Platform.isAndroid && androidInfo.version.sdkInt >= 30
       ? Permission.manageExternalStorage.request()
       : Permission.storage.request());
 
   if (status.isGranted) {
-    List<List<dynamic>> rows = [];
+    final xlsio.Workbook workbook = xlsio.Workbook();
+    final xlsio.Worksheet sheet = workbook.worksheets[0];
 
-    // Agregar encabezados
-    rows.add([
-      "Fecha",
-      "Unidad",
-      "Kilometraje",
-      "Litros de Gasolina",
-    ]);
+    // Ajustes de estilo para encabezados y datos
+    sheet.getRangeByName('A1:D1').columnWidth = 25;
+    sheet.getRangeByName('A1').setText('Reporte de Gasolina');
+    sheet.getRangeByName('A1').cellStyle.fontSize = 16;
+    sheet.getRangeByName('A1').cellStyle.bold = true;
 
-    // Agregar datos del reporte
-    rows.add([
-      DateFormat('dd/MM/yyyy').format(report['date'].toDate()),
-      report['unit_number'],
-      report['odometer_reading'],
-      report['gasoline_liters'],
-    ]);
+    sheet.getRangeByName('A3').setText('Fecha:');
+    sheet.getRangeByName('B3').setText(DateFormat('dd/MM/yyyy').format(report['date'].toDate()));
+    sheet.getRangeByName('A4').setText('Unidad:');
+    sheet.getRangeByName('B4').setText(report['unit_number']);
 
-    String csvData = const ListToCsvConverter().convert(rows);
+    sheet.getRangeByName('A3:A6').cellStyle.bold = true;
+    sheet.getRangeByName('A3:B6').cellStyle.fontSize = 12;
+    sheet.getRangeByName('A3:B6').cellStyle.hAlign = xlsio.HAlignType.left;
 
-    // Obtener el directorio de descargas
+    sheet.getRangeByName('A5').setText('Kilometraje:');
+    sheet.getRangeByName('B5').setNumber((report['odometer_reading'] as num).toDouble());
+    
+    sheet.getRangeByName('A6').setText('Litros de Gasolina:');
+    sheet.getRangeByName('B6').setNumber((report['gasoline_liters'] as num).toDouble());
+
+    // Insertar las imágenes en filas y columnas separadas
+    final Uint8List? ticketImage = await _downloadImage(report['gasoline_receipt_image_url']);
+    if (ticketImage != null) {
+      sheet.getRangeByName('A8').setText('Ticket de Gasolina:');
+      var ticketPicture = sheet.pictures.addStream(8, 2, ticketImage);
+      ticketPicture.width = 150; // Ajuste de tamaño de la imagen
+      ticketPicture.height = 100;
+    }
+
+    final Uint8List? odometerImage = await _downloadImage(report['odometer_image_url']);
+    if (odometerImage != null) {
+      sheet.getRangeByName('A12').setText('Odómetro:');
+      var odometerPicture = sheet.pictures.addStream(12, 2, odometerImage);
+      odometerPicture.width = 150;
+      odometerPicture.height = 100;
+    }
+
+    final List<int> bytes = workbook.saveAsStream();
+    workbook.dispose();
+
     final directory = Directory('/storage/emulated/0/Download');
-    final path = "${directory.path}/reporte_${DateFormat('ddMMyyyy').format(report['date'].toDate())}.csv";
+    final path = "${directory.path}/reporte_${DateFormat('ddMMyyyy').format(report['date'].toDate())}.xlsx";
     final file = File(path);
-
-    await file.writeAsString(csvData);
-    print("Archivo CSV guardado en $path");
+    await file.writeAsBytes(bytes, flush: true);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Reporte descargado en formato CSV en la carpeta Descargas")),
+      SnackBar(
+        content: Text("Reporte descargado en formato Excel en la carpeta Descargas"),
+        duration: Duration(seconds: 3),
+      ),
     );
+
+    print("Archivo Excel guardado en $path");
   } else {
     print("Permiso de almacenamiento denegado.");
     ScaffoldMessenger.of(context).showSnackBar(
@@ -99,6 +126,20 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 }
+
+Future<Uint8List?> _downloadImage(String url) async {
+  try {
+    final response = await HttpClient().getUrl(Uri.parse(url));
+    final HttpClientResponse res = await response.close();
+    if (res.statusCode == 200) {
+      return await consolidateHttpClientResponseBytes(res);
+    }
+  } catch (e) {
+    print("Error al descargar la imagen: $e");
+  }
+  return null;
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +277,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                                                 child: IconButton(
                                                   icon: Icon(Icons.download, color: Colors.white),
                                                   onPressed: () async {
-                                                    await _downloadCSV(report);
+                                                    await _downloadExcel(report);
                                                   },
                                                 ),
                                               ),
