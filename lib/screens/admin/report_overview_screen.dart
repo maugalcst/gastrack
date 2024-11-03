@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'admin_dashboard_screen.dart';
-import 'performance_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReportOverviewScreen extends StatefulWidget {
   @override
@@ -8,7 +7,36 @@ class ReportOverviewScreen extends StatefulWidget {
 }
 
 class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
-  String _selectedFilter = 'conductor';
+  Set<String> employeeEmails = {}; // Para almacenar emails únicos
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEmployeeEmails();
+  }
+
+  Future<void> _fetchEmployeeEmails() async {
+    try {
+      // Consulta la colección 'users' para obtener los emails de los empleados con rol 'employee'
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'employee')
+          .get();
+
+      // Extrae los emails únicos de los documentos
+      setState(() {
+        employeeEmails = snapshot.docs
+            .map((doc) => doc['email'] as String)
+            .toSet(); // Convierte a conjunto para evitar duplicados
+      });
+
+      // Imprime el conjunto de emails para verificar su contenido
+      print("Emails obtenidos: $employeeEmails");
+    } catch (e) {
+      print("Error al obtener emails de empleados: $e");
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -57,91 +85,8 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Reportes',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF07154C),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.menu, color: Color(0xFF07154C)),
-                        onPressed: () {
-                          _showMenu(context);
-                        },
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
                   Text(
-                    'Aquí puede observar y descargar los reportes que se han registrado así como historial de reportes de los usuarios.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF07154C),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedFilter = 'conductor';
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedFilter == 'conductor'
-                              ? Color.fromARGB(255, 9, 27, 100)
-                              : Colors.grey[300],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: Text(
-                          'Conductor',
-                          style: TextStyle(
-                            color: _selectedFilter == 'conductor'
-                                ? Colors.white
-                                : Color.fromARGB(255, 9, 27, 100),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedFilter = 'unidad';
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedFilter == 'unidad'
-                              ? Color(0xFF07154C)
-                              : Colors.grey[300],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: Text(
-                          'Unidad',
-                          style: TextStyle(
-                            color: _selectedFilter == 'unidad'
-                                ? Colors.white
-                                : Color.fromARGB(255, 9, 27, 100),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    _selectedFilter == 'conductor'
-                        ? 'Reportes por conductor'
-                        : 'Reportes por unidad',
+                    'Reportes por conductor',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -151,16 +96,16 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                   SizedBox(height: 8),
                   _buildTableHeader(),
                   SizedBox(height: 8),
+                  // Lista de emails con botón "Ver"
                   ListView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
-                    itemCount: 5,
+                    itemCount: employeeEmails.length,
                     itemBuilder: (context, index) {
+                      String email = employeeEmails.elementAt(index);
                       return _buildReportRow(
-                        name: _selectedFilter == 'conductor'
-                            ? 'Nombre ${index + 1}'
-                            : 'Unidad ${index + 1}',
-                        id: 'ID${index + 1}',
+                        name: email,
+                        id: 'A32', // Placeholder, se puede actualizar si es necesario
                       );
                     },
                   ),
@@ -240,7 +185,7 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
               height: 40, // Alto del botón
               child: ElevatedButton(
                 onPressed: () {
-                  // Acción para ver el reporte
+                  // Acción para ver el reporte, se implementará después
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color.fromARGB(255, 18, 90, 207), // Color del botón "Ver"
@@ -258,78 +203,6 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
           ],
         ),
       ),
-    );
-  }
-  
-  // Función para mostrar el menú lateral
-  void _showMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildMenuItem(context, 'Panel principal', Icons.home, () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
-                );
-              }),
-              _buildMenuItem(context, 'Rendimiento', Icons.show_chart, () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => PerformanceScreen()),
-                );
-              }),
-              _buildMenuItem(context, 'Reportes', Icons.receipt_long, () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ReportOverviewScreen()),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // Botón "Ver"
-  Widget _buildViewButton() {
-    return Container(
-      height: 40,
-      width: 80,
-      child: ElevatedButton(
-        onPressed: () {
-          // Agrega la funcionalidad de "Ver" aquí
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF3366FF), // Cambia el color del botón a azul
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // Bordes más redondeados
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Ajusta el padding
-        ),
-        child: Text(
-          'Ver',
-          style: TextStyle(fontSize: 16, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  // Widget para construir cada item del menú
-  Widget _buildMenuItem(BuildContext context, String title, IconData icon, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Color(0xFF07154C)),
-      title: Text(title, style: TextStyle(color: Color(0xFF07154C))),
-      onTap: onTap,
     );
   }
 }
