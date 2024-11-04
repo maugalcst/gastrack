@@ -53,7 +53,21 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     }
   }
 
-  Future<void> _downloadExcel(Map<String, dynamic> report) async {
+  bool isDownloading = false; // Controla el estado de descarga
+
+Future<void> _downloadExcel(Map<String, dynamic> report) async {
+  setState(() {
+    isDownloading = true; // Inicia el estado de descarga
+  });
+
+  // Mostrar un SnackBar indicando que la descarga ha comenzado
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text("Descargando reporte, espere un momento..."),
+      duration: Duration(seconds: 2),
+    ),
+  );
+
   final deviceInfo = DeviceInfoPlugin();
   final androidInfo = await deviceInfo.androidInfo;
 
@@ -64,8 +78,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   if (status.isGranted) {
     final xlsio.Workbook workbook = xlsio.Workbook();
     final xlsio.Worksheet sheet = workbook.worksheets[0];
-
-    // Ajustes de estilo para encabezados y datos
+    
+    // Estructura y estilo de Excel
     sheet.getRangeByName('A1:D1').columnWidth = 25;
     sheet.getRangeByName('A1').setText('Reporte de Gasolina');
     sheet.getRangeByName('A1').cellStyle.fontSize = 16;
@@ -75,23 +89,17 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     sheet.getRangeByName('B3').setText(DateFormat('dd/MM/yyyy').format(report['date'].toDate()));
     sheet.getRangeByName('A4').setText('Unidad:');
     sheet.getRangeByName('B4').setText(report['unit_number']);
-
-    sheet.getRangeByName('A3:A6').cellStyle.bold = true;
-    sheet.getRangeByName('A3:B6').cellStyle.fontSize = 12;
-    sheet.getRangeByName('A3:B6').cellStyle.hAlign = xlsio.HAlignType.left;
-
     sheet.getRangeByName('A5').setText('Kilometraje:');
     sheet.getRangeByName('B5').setNumber((report['odometer_reading'] as num).toDouble());
-    
     sheet.getRangeByName('A6').setText('Litros de Gasolina:');
     sheet.getRangeByName('B6').setNumber((report['gasoline_liters'] as num).toDouble());
 
-    // Insertar las imágenes en filas y columnas separadas
+    // Insertar imágenes
     final Uint8List? ticketImage = await _downloadImage(report['gasoline_receipt_image_url']);
     if (ticketImage != null) {
       sheet.getRangeByName('A8').setText('Ticket de Gasolina:');
       var ticketPicture = sheet.pictures.addStream(8, 2, ticketImage);
-      ticketPicture.width = 150; // Ajuste de tamaño de la imagen
+      ticketPicture.width = 150;
       ticketPicture.height = 100;
     }
 
@@ -120,12 +128,16 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
 
     print("Archivo Excel guardado en $path");
   } else {
-    print("Permiso de almacenamiento denegado.");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Permiso de almacenamiento denegado")),
     );
   }
+
+  setState(() {
+    isDownloading = false; // Finaliza el estado de descarga
+  });
 }
+
 
 Future<Uint8List?> _downloadImage(String url) async {
   try {
@@ -276,11 +288,21 @@ Future<Uint8List?> _downloadImage(String url) async {
                                                 ),
                                                 child: IconButton(
                                                   icon: Icon(Icons.download, color: Colors.white),
+                                                  splashColor: Colors.blueAccent.withOpacity(0.3), // Color al hacer clic
+                                                  highlightColor: Colors.blueAccent.withOpacity(0.2), // Color al mantener presionado
                                                   onPressed: () async {
+                                                    // Mostrar el SnackBar antes de iniciar la descarga
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text("Descargando reporte, espere un momento..."),
+                                                        duration: Duration(seconds: 2),
+                                                      ),
+                                                    );
                                                     await _downloadExcel(report);
                                                   },
                                                 ),
                                               ),
+
                                             ],
                                           ),
                                         ],

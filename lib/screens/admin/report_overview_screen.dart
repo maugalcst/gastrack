@@ -73,7 +73,7 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color.fromARGB(255, 209, 217, 255),
+                  Color.fromARGB(255, 232, 236, 255),
                   const Color.fromARGB(255, 251, 251, 251),
                 ],
               ),
