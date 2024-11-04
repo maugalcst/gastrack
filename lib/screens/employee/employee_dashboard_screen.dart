@@ -43,10 +43,10 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bienvenido, Mauricio',
+                'Bienvenido',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
                   color: Color(0xFF07154C),
                 ),
               ),
