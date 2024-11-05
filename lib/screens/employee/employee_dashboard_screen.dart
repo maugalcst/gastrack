@@ -117,63 +117,87 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
               ),
 
               SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Color(0xFFF0F0F0),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              FutureBuilder(
+                future: _calculateAveragePerformance(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator(); // Muestra un indicador de carga mientras se obtiene el valor
+                  }
+                  if (snapshot.hasError) {
+                    return Text('Error'); // Muestra un mensaje de error si ocurre uno
+                  }
+
+                  // Define el color de fondo del contenedor y el texto basado en el valor del rendimiento promedio
+                  double rendimiento = snapshot.data ?? 0.0;
+                  Color contenedorColor;
+                  Color rendimientoColor;
+
+                  if (rendimiento > 20) {
+                    contenedorColor = const Color.fromARGB(255, 199, 228, 252);
+                    rendimientoColor = Colors.blue;
+                  } else if (rendimiento >= 10) {
+                    contenedorColor = const Color.fromARGB(255, 210, 232, 211);
+                    rendimientoColor = Colors.green;
+                  } else if (rendimiento >= 7) {
+                    contenedorColor = Colors.yellow[100]!;
+                    rendimientoColor = Colors.yellow[700]!;
+                  } else if (rendimiento > 0) {
+                    contenedorColor = const Color.fromARGB(255, 245, 212, 215);
+                    rendimientoColor = Colors.red;
+                  } else {
+                    contenedorColor = Colors.grey[300]!;
+                    rendimientoColor = Colors.grey;
+                  }
+
+                  return Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: contenedorColor, // Color de fondo según el rendimiento
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Observa tu rendimiento',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF07154C),
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Rendimiento general',
+                              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                            ),
+                          ],
+                        ),
+                        Spacer(),
                         Text(
-                          'Observa tu rendimiento',
+                          rendimiento > 0 ? rendimiento.toStringAsFixed(1) : "N/A",
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF07154C),
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: rendimientoColor, // Color del texto según el rendimiento
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Rendimiento general',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                        IconButton(
+                          onPressed: () {
+                            _showInfoDialog(context);
+                          },
+                          icon: Icon(Icons.info_outline),
+                          tooltip: 'Ver detalles del rendimiento',
                         ),
                       ],
                     ),
-                    Spacer(),
-                      FutureBuilder<double>(
-                        future: _calculateAveragePerformance(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return CircularProgressIndicator(); // Muestra un indicador de carga mientras se obtiene el valor
-                          }
-                          if (snapshot.hasError) {
-                            return Text('Error'); // Muestra un mensaje de error si ocurre uno
-                          }
-                          return Text(
-                            snapshot.data?.toStringAsFixed(1) ?? 'N/A', // Solo muestra el promedio de rendimiento
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: (snapshot.data ?? 0) > 10 ? Colors.green : Colors.red,
-                            ),
-                          );
-                        },
-                      ),
-                    IconButton(
-                      onPressed: () {
-                        _showInfoDialog(context);
-                      },
-                      icon: Icon(Icons.info_outline),
-                      tooltip: 'Ver detalles del rendimiento',
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
+
               SizedBox(height: 16),
               Text(
                 'Últimos reportes registrados',
@@ -250,52 +274,55 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
   }
 
   Future<double> _calculateAveragePerformance() async {
-  final userEmail = "empleado@vixo.com"; // Cambiar esto por el email del usuario autenticado
-  try {
-    // Consulta los reportes del usuario específico
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('reports')
-        .where('email', isEqualTo: userEmail)
-        .orderBy('date')
-        .get();
+    final userEmail = "empleado@vixo.com"; // Cambiar esto por el email del usuario autenticado
+    try {
+      // Consulta solo los últimos 3 reportes del usuario específico
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('email', isEqualTo: userEmail)
+          .orderBy('date', descending: true)
+          .limit(3)
+          .get();
 
-    if (snapshot.docs.length < 2) {
-      // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
-      return 0.0;
-    }
+      if (snapshot.docs.length < 2) {
+        // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
+        return 0.0;
+      }
 
-    double totalKm = 0;
-    double totalLiters = 0;
-    int? lastOdometer;
-    int validReportCount = 0; // Contador de reportes con rendimiento válido
+      double totalKm = 0;
+      double totalLiters = 0;
+      int? lastOdometer;
+      int validReportCount = 0; // Contador de reportes con rendimiento válido
 
-    for (var doc in snapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      int odometerReading = data['odometer_reading'] ?? 0;
-      int gasolineLiters = data['gasoline_liters'] ?? 0;
+      // Procesa los reportes en orden cronológico
+      var reports = snapshot.docs.reversed.toList();
 
-      // Solo calcula la distancia si tenemos un kilometraje previo válido
-      if (lastOdometer != null && odometerReading > lastOdometer) {
-        totalKm += (odometerReading - lastOdometer);
-        totalLiters += gasolineLiters; // Solo suma litros cuando se cuenta distancia
-        validReportCount++; // Incrementa el contador de reportes válidos
-      } else if (lastOdometer == null) {
-        // Este es el primer reporte, lo usamos solo para establecer el kilometraje inicial
+      for (var doc in reports) {
+        var data = doc.data() as Map<String, dynamic>;
+        int odometerReading = data['odometer_reading'] ?? 0;
+        int gasolineLiters = data['gasoline_liters'] ?? 0;
+
+        // Solo calcula la distancia si tenemos un kilometraje previo válido
+        if (lastOdometer != null && odometerReading > lastOdometer) {
+          totalKm += (odometerReading - lastOdometer);
+          totalLiters += gasolineLiters; // Solo suma litros cuando se cuenta distancia
+          validReportCount++; // Incrementa el contador de reportes válidos
+        } else if (lastOdometer == null) {
+          // Este es el primer reporte, lo usamos solo para establecer el kilometraje inicial
+          lastOdometer = odometerReading;
+        }
+
+        // Actualiza lastOdometer después de cada reporte
         lastOdometer = odometerReading;
       }
 
-      // Actualiza lastOdometer después de cada reporte
-      lastOdometer = odometerReading;
+      // Calcula el rendimiento promedio si hay litros de gasolina registrados y al menos un reporte válido
+      return (totalLiters > 0 && validReportCount > 0) ? totalKm / totalLiters : 0.0;
+    } catch (e) {
+      print('Error al calcular el rendimiento promedio: $e');
+      return 0.0; // Valor por defecto en caso de error
     }
-
-    // Calcula el rendimiento promedio si hay litros de gasolina registrados y al menos un reporte válido
-    return (totalLiters > 0 && validReportCount > 0) ? totalKm / totalLiters : 0.0;
-  } catch (e) {
-    print('Error al calcular el rendimiento promedio: $e');
-    return 0.0; // Valor por defecto en caso de error
   }
-}
-
 
 
   void _showReportDetails(BuildContext context, Map<String, dynamic> report) {
@@ -354,9 +381,35 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Aquí usted registrará el rendimiento diario de su unidad, este rendimiento se calcula usando el kilometraje, litros de gasolina, etc.',
-                style: TextStyle(fontSize: 16, color: Color(0xFF07154C)),
+                'Información sobre el rendimiento',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF07154C)),
                 textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'El rendimiento general se calcula en base a los tres últimos reportes registrados, dividiendo los kilómetros recorridos entre los litros de gasolina consumidos en ese período. Este valor indica cuántos kilómetros recorre la unidad por cada litro de gasolina.',
+                style: TextStyle(fontSize: 16, color: Color(0xFF07154C)),
+                textAlign: TextAlign.justify,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Interpretación de los colores:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF07154C)),
+              ),
+              SizedBox(height: 10),
+              Text(
+                '• Verde: Buen rendimiento (10 km/L o más).\n'
+                '• Amarillo: Rendimiento moderado (7 a 9.9 km/L).\n'
+                '• Rojo: Bajo rendimiento (menor a 7 km/L).\n'
+                '• Azul: Rendimiento inusualmente alto (mayor a 20 km/L).',
+                style: TextStyle(fontSize: 14, color: Color(0xFF07154C)),
+                textAlign: TextAlign.left,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Si el rendimiento es demasiado alto o bajo, puede indicar problemas con la unidad o en el registro de los datos. Por favor, verifique siempre el odómetro y el ticket de gasolina al registrar un reporte.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                textAlign: TextAlign.justify,
               ),
               SizedBox(height: 20),
               IconButton(
@@ -387,8 +440,10 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Todos los reportes'),
-        backgroundColor: Color(0xFF07154C),
+        title: Text(
+          'Todos los reportes',
+          style: TextStyle(color: Colors.white),),
+        backgroundColor: Color.fromARGB(255, 7, 21, 76),
       ),
       body: Column(
         children: [
