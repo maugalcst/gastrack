@@ -90,40 +90,70 @@ class _FuelReportFormScreenState extends State<FuelReportFormScreen> {
     }
   }
 
+  // Función para calcular el rendimiento (km por litro)
+  double calculatePerformance(int odometerReading, int gasolineLiters) {
+    if (gasolineLiters > 0) {
+      return odometerReading / gasolineLiters;
+    } else {
+      return 0.0; // Evita división por cero
+    }
+  }
 
   // Función para guardar el reporte en Firestore
   Future<void> saveReportToFirestore({
-    required String employeeName,
-    required String unitNumber,
-    required int odometerReading,
-    required int gasolineLiters,
-    required String gasolineReceiptImageUrl,
-    required String odometerImageUrl,
-  }) async {
-    try {
-      // Obtiene el email del usuario autenticado
-      String? email = FirebaseAuth.instance.currentUser?.email;
+  required String employeeName,
+  required String unitNumber,
+  required int odometerReading,
+  required int gasolineLiters,
+  required String gasolineReceiptImageUrl,
+  required String odometerImageUrl,
+}) async {
+  try {
+    String? email = FirebaseAuth.instance.currentUser?.email;
 
-      // Verifica que el email no sea nulo
-      if (email != null) {
-        await FirebaseFirestore.instance.collection('reports').add({
-          'employee_name': employeeName,
-          'unit_number': unitNumber,
-          'odometer_reading': odometerReading,
-          'gasoline_liters': gasolineLiters,
-          'gasoline_receipt_image_url': gasolineReceiptImageUrl,
-          'odometer_image_url': odometerImageUrl,
-          'email': email, // Guarda el email del usuario
-          'date': Timestamp.now(),
-        });
-        print('Reporte guardado exitosamente');
-      } else {
-        print('Error: No se pudo obtener el email del usuario');
+    if (email != null) {
+      final previousReports = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('email', isEqualTo: email)
+          .orderBy('date', descending: true)
+          .limit(1)
+          .get();
+
+      double rendimiento = 0;
+
+      if (previousReports.docs.isNotEmpty) {
+        // Existe un reporte anterior
+        final lastReport = previousReports.docs.first.data();
+        int previousOdometer = lastReport['odometer_reading'];
+        int kilometersDriven = odometerReading - previousOdometer;
+
+        // Calcula el rendimiento solo si es un reporte posterior al primero
+        if (kilometersDriven > 0) {
+          rendimiento = kilometersDriven / gasolineLiters;
+        }
       }
-    } catch (e) {
-      print('Error al guardar el reporte: $e');
+
+      await FirebaseFirestore.instance.collection('reports').add({
+        'employee_name': employeeName,
+        'unit_number': unitNumber,
+        'odometer_reading': odometerReading,
+        'gasoline_liters': gasolineLiters,
+        'gasoline_receipt_image_url': gasolineReceiptImageUrl,
+        'odometer_image_url': odometerImageUrl,
+        'email': email,
+        'date': Timestamp.now(),
+        'rendimiento': previousReports.docs.isNotEmpty ? rendimiento : 'N/A', // Marcar como "N/A" si es el primer reporte
+      });
+
+      print('Reporte guardado exitosamente');
+    } else {
+      print('Error: No se pudo obtener el email del usuario');
     }
+  } catch (e) {
+    print('Error al guardar el reporte: $e');
   }
+}
+
 
   // Botón continuar único
 Widget _buildContinueButton(double height, double width) {
@@ -186,8 +216,6 @@ Widget _buildContinueButton(double height, double width) {
     ),
   );
 }
-
-
 
   Widget _buildUpperLogo(double height)
   {

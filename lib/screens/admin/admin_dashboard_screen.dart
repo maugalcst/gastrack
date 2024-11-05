@@ -1,9 +1,69 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gastrack_uanl/screens/admin/report_overview_screen.dart';
 import 'package:gastrack_uanl/screens/admin/performance_screen.dart';
 import 'package:intl/intl.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
+
+  Future<double> calculateGeneralAveragePerformance() async {
+  try {
+    // Obtener la colección de empleados
+    QuerySnapshot usersSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'employee')
+        .get();
+
+    // Acumular el rendimiento de cada empleado
+    double totalPerformance = 0.0;
+    int employeeCount = 0;
+
+    for (var userDoc in usersSnapshot.docs) {
+      String email = userDoc['email'];
+
+      // Obtener los últimos 3 reportes de cada empleado
+      QuerySnapshot reportsSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('email', isEqualTo: email)
+          .orderBy('date', descending: true)
+          .limit(3)
+          .get();
+
+      // Calcular el rendimiento individual
+      if (reportsSnapshot.docs.length > 1) {
+        double totalKm = 0;
+        double totalLiters = 0;
+        int? lastOdometer;
+
+        for (var reportDoc in reportsSnapshot.docs.reversed) {
+          var data = reportDoc.data() as Map<String, dynamic>;
+          int odometerReading = data['odometer_reading'] ?? 0;
+          int gasolineLiters = data['gasoline_liters'] ?? 0;
+
+          if (lastOdometer != null && odometerReading > lastOdometer) {
+            totalKm += (odometerReading - lastOdometer);
+            totalLiters += gasolineLiters;
+          } else if (lastOdometer == null) {
+            lastOdometer = odometerReading;
+          }
+
+          lastOdometer = odometerReading;
+        }
+
+        double performance = (totalLiters > 0) ? totalKm / totalLiters : 0.0;
+        totalPerformance += performance;
+        employeeCount++;
+      }
+    }
+
+    // Calcular el promedio general
+    return (employeeCount > 0) ? totalPerformance / employeeCount : 0.0;
+  } catch (e) {
+    print('Error al calcular el rendimiento promedio general: $e');
+    return 0.0;
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,26 +131,45 @@ class AdminDashboardScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 24), // Más espacio entre elementos
                   Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '82.5', // Este valor cambiará dinámicamente
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                        SizedBox(width: 8), // Espacio entre el número y el icono
-                        IconButton(
-                          onPressed: () {
-                            _showInfoDialog(context);
-                          },
-                          icon: Icon(Icons.info_outline),
-                          tooltip: 'Información sobre rendimiento',
-                        ),
-                      ],
+                    child: FutureBuilder<double>(
+                      future: calculateGeneralAveragePerformance(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text(
+                            'Error',
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          );
+                        } else {
+                          double averagePerformance = snapshot.data ?? 0.0;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                averagePerformance.toStringAsFixed(1),
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: averagePerformance >= 10 ? Colors.green : Colors.red,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () {
+                                  _showInfoDialog(context);
+                                },
+                                icon: Icon(Icons.info_outline),
+                                tooltip: 'Información sobre rendimiento',
+                              ),
+                            ],
+                          );
+                        }
+                      },
                     ),
                   ),
                   SizedBox(height: 24),
@@ -128,37 +207,77 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  // Método para mostrar la pestaña emergente
   void _showInfoDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Este rendimiento se calcula usando el kilometraje, litros de gasolina, etc. Se creará un reporte con los datos que ingrese el empleado y se calculará el rendimiento.',
-                style: TextStyle(fontSize: 16, color: Color(0xFF07154C)),
-                textAlign: TextAlign.center,
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Información sobre el Rendimiento',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF07154C),
               ),
-              SizedBox(height: 20),
-              IconButton(
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'El rendimiento se calcula dividiendo la distancia recorrida entre la gasolina consumida en cada reporte. El promedio general refleja la eficiencia en el uso de combustible.',
+              style: TextStyle(fontSize: 16, color: Color(0xFF07154C)),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Interpretación de colores:',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF07154C),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '- Azul: Rendimiento inusual o excesivo.',
+              style: TextStyle(fontSize: 15, color: Colors.blue),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '- Verde: Buen rendimiento.',
+              style: TextStyle(fontSize: 15, color: Colors.green),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '- Amarillo: Rendimiento moderado.',
+              style: TextStyle(fontSize: 15, color: Colors.orange),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '- Rojo: Rendimiento bajo. Revisar unidad o hábitos de conducción.',
+              style: TextStyle(fontSize: 15, color: Colors.red),
+            ),
+            SizedBox(height: 16),
+            Center(
+              child: IconButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
                 icon: Icon(Icons.close, color: Colors.grey),
                 tooltip: 'Cerrar',
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   // Widget para los detalles en forma de tarjeta
   Widget _buildDetailCard(String label, String value) {
