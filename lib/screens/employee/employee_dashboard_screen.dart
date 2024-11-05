@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gastrack_uanl/screens/employee/fuel_report_form_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart'; // Para dar formato a la fecha
 
 class EmployeeDashboardScreen extends StatefulWidget {
@@ -131,19 +132,24 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
                   double rendimiento = snapshot.data ?? 0.0;
                   Color contenedorColor;
                   Color rendimientoColor;
+                  String rendimientoMessage = "";
 
                   if (rendimiento > 20) {
                     contenedorColor = const Color.fromARGB(255, 199, 228, 252);
                     rendimientoColor = Colors.blue;
+                    rendimientoMessage = "Rendimiento inusualmente alto";
                   } else if (rendimiento >= 10) {
                     contenedorColor = const Color.fromARGB(255, 210, 232, 211);
                     rendimientoColor = Colors.green;
+                    rendimientoMessage = "Excelente rendimiento";
                   } else if (rendimiento >= 7) {
                     contenedorColor = Colors.yellow[100]!;
                     rendimientoColor = Colors.yellow[700]!;
+                    rendimientoMessage = "Buen rendimiento";
                   } else if (rendimiento > 0) {
                     contenedorColor = const Color.fromARGB(255, 245, 212, 215);
                     rendimientoColor = Colors.red;
+                    rendimientoMessage = "Rendimiento bajo, revisar unidad";
                   } else {
                     contenedorColor = Colors.grey[300]!;
                     rendimientoColor = Colors.grey;
@@ -171,8 +177,8 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Rendimiento general',
-                              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                              rendimientoMessage, // Muestra el mensaje contextual
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: rendimientoColor),
                             ),
                           ],
                         ),
@@ -273,56 +279,64 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
     );
   }
 
-  Future<double> _calculateAveragePerformance() async {
-    final userEmail = "empleado@vixo.com"; // Cambiar esto por el email del usuario autenticado
-    try {
-      // Consulta solo los últimos 3 reportes del usuario específico
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('reports')
-          .where('email', isEqualTo: userEmail)
-          .orderBy('date', descending: true)
-          .limit(3)
-          .get();
+Future<double> _calculateAveragePerformance() async {
+  final User? user = FirebaseAuth.instance.currentUser; // Obtén el usuario autenticado actual
+  final userEmail = user?.email; // Obtén el email del usuario autenticado
 
-      if (snapshot.docs.length < 2) {
-        // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
-        return 0.0;
-      }
+  if (userEmail == null) {
+    print('Usuario no autenticado');
+    return 0.0;
+  }
 
-      double totalKm = 0;
-      double totalLiters = 0;
-      int? lastOdometer;
-      int validReportCount = 0; // Contador de reportes con rendimiento válido
+  try {
+    // Consulta solo los últimos 3 reportes del usuario específico
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('reports')
+        .where('email', isEqualTo: userEmail)
+        .orderBy('date', descending: true)
+        .limit(3)
+        .get();
 
-      // Procesa los reportes en orden cronológico
-      var reports = snapshot.docs.reversed.toList();
+    if (snapshot.docs.length < 2) {
+      // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
+      return 0.0;
+    }
 
-      for (var doc in reports) {
-        var data = doc.data() as Map<String, dynamic>;
-        int odometerReading = data['odometer_reading'] ?? 0;
-        int gasolineLiters = data['gasoline_liters'] ?? 0;
+    double totalKm = 0;
+    double totalLiters = 0;
+    int? lastOdometer;
+    int validReportCount = 0; // Contador de reportes con rendimiento válido
 
-        // Solo calcula la distancia si tenemos un kilometraje previo válido
-        if (lastOdometer != null && odometerReading > lastOdometer) {
-          totalKm += (odometerReading - lastOdometer);
-          totalLiters += gasolineLiters; // Solo suma litros cuando se cuenta distancia
-          validReportCount++; // Incrementa el contador de reportes válidos
-        } else if (lastOdometer == null) {
-          // Este es el primer reporte, lo usamos solo para establecer el kilometraje inicial
-          lastOdometer = odometerReading;
-        }
+    // Procesa los reportes en orden cronológico
+    var reports = snapshot.docs.reversed.toList();
 
-        // Actualiza lastOdometer después de cada reporte
+    for (var doc in reports) {
+      var data = doc.data() as Map<String, dynamic>;
+      int odometerReading = data['odometer_reading'] ?? 0;
+      int gasolineLiters = data['gasoline_liters'] ?? 0;
+
+      // Solo calcula la distancia si tenemos un kilometraje previo válido
+      if (lastOdometer != null && odometerReading > lastOdometer) {
+        totalKm += (odometerReading - lastOdometer);
+        totalLiters += gasolineLiters; // Solo suma litros cuando se cuenta distancia
+        validReportCount++; // Incrementa el contador de reportes válidos
+      } else if (lastOdometer == null) {
+        // Este es el primer reporte, lo usamos solo para establecer el kilometraje inicial
         lastOdometer = odometerReading;
       }
 
-      // Calcula el rendimiento promedio si hay litros de gasolina registrados y al menos un reporte válido
-      return (totalLiters > 0 && validReportCount > 0) ? totalKm / totalLiters : 0.0;
-    } catch (e) {
-      print('Error al calcular el rendimiento promedio: $e');
-      return 0.0; // Valor por defecto en caso de error
+      // Actualiza lastOdometer después de cada reporte
+      lastOdometer = odometerReading;
     }
+
+    // Calcula el rendimiento promedio si hay litros de gasolina registrados y al menos un reporte válido
+    return (totalLiters > 0 && validReportCount > 0) ? totalKm / totalLiters : 0.0;
+  } catch (e) {
+    print('Error al calcular el rendimiento promedio: $e');
+    return 0.0; // Valor por defecto en caso de error
   }
+}
+
 
 
   void _showReportDetails(BuildContext context, Map<String, dynamic> report) {
