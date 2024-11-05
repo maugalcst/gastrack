@@ -217,10 +217,11 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
               // Muestra los últimos 3 reportes ordenados por fecha
               StreamBuilder(
                 stream: FirebaseFirestore.instance
-                    .collection('reports')
-                    .orderBy('date', descending: true) // Orden por fecha descendente
-                    .limit(3) // Limitar a los últimos 3 reportes
-                    .snapshots(),
+                  .collection('reports')
+                  .where('email', isEqualTo: FirebaseAuth.instance.currentUser!.email) // Filtro por el email del usuario autenticado
+                  .orderBy('date', descending: true)
+                  .limit(3)
+                  .snapshots(),
                 builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
@@ -478,9 +479,10 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
           Expanded(
             child: StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('reports')
-                  .orderBy(_selectedOrder == 'Fecha' ? 'date' : 'unit_number', descending: true)
-                  .snapshots(),
+                .collection('reports')
+                .where('email', isEqualTo: FirebaseAuth.instance.currentUser!.email) // Filtro por el email del usuario autenticado
+                .orderBy(_selectedOrder == 'Fecha' ? 'date' : 'unit_number', descending: true)
+                .snapshots(),
               builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
