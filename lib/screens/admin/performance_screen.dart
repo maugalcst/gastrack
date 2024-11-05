@@ -10,74 +10,91 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   String _selectedFilter = 'Rendimiento'; // Filtro inicial
 
 
-Future<List<Map<String, dynamic>>> getEmployees() async {
-  try {
-    // Obtener todos los usuarios con rol "employee"
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('role', isEqualTo: 'employee')
-        .get();
+  Future<List<Map<String, dynamic>>> getEmployees() async {
+    try {
+      // Obtener todos los usuarios con rol "employee"
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'employee')
+          .get();
 
-    // Crear una lista con la información de cada empleado
-    List<Map<String, dynamic>> employees = snapshot.docs.map((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      return {
-        'email': data['email'],
-        'name': data['employee_name'] ?? '', // Puedes ajustar el campo según el esquema en Firebase
-      };
-    }).toList();
+      // Crear una lista con la información de cada empleado
+      List<Map<String, dynamic>> employees = snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        return {
+          'email': data['email'],
+          'name': data['employee_name'] ?? '', // Puedes ajustar el campo según el esquema en Firebase
+        };
+      }).toList();
 
-    return employees;
-  } catch (e) {
-    print('Error al obtener la lista de empleados: $e');
-    return [];
-  }
-}
-
-Future<double> calculateAveragePerformanceForEmployee(String email) async {
-  try {
-    // Obtener los últimos 3 reportes del empleado
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('reports')
-        .where('email', isEqualTo: email)
-        .orderBy('date', descending: true)
-        .limit(3)
-        .get();
-
-    if (snapshot.docs.length < 2) {
-      // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
-      return 0.0;
+      return employees;
+    } catch (e) {
+      print('Error al obtener la lista de empleados: $e');
+      return [];
     }
+  }
 
-    double totalKm = 0;
-    double totalLiters = 0;
-    int? lastOdometer;
+  Future<double> calculateAveragePerformanceForEmployee(String email) async {
+    try {
+      // Obtener los últimos 3 reportes del empleado
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('email', isEqualTo: email)
+          .orderBy('date', descending: true)
+          .limit(3)
+          .get();
 
-    var reports = snapshot.docs.reversed.toList();
+      if (snapshot.docs.length < 2) {
+        // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
+        return 0.0;
+      }
 
-    for (var doc in reports) {
-      var data = doc.data() as Map<String, dynamic>;
-      int odometerReading = data['odometer_reading'] ?? 0;
-      int gasolineLiters = data['gasoline_liters'] ?? 0;
+      double totalKm = 0;
+      double totalLiters = 0;
+      int? lastOdometer;
 
-      // Solo calcula la distancia si tenemos un kilometraje previo válido
-      if (lastOdometer != null && odometerReading > lastOdometer) {
-        totalKm += (odometerReading - lastOdometer);
-        totalLiters += gasolineLiters;
-      } else if (lastOdometer == null) {
+      var reports = snapshot.docs.reversed.toList();
+
+      for (var doc in reports) {
+        var data = doc.data() as Map<String, dynamic>;
+        int odometerReading = data['odometer_reading'] ?? 0;
+        int gasolineLiters = data['gasoline_liters'] ?? 0;
+
+        // Solo calcula la distancia si tenemos un kilometraje previo válido
+        if (lastOdometer != null && odometerReading > lastOdometer) {
+          totalKm += (odometerReading - lastOdometer);
+          totalLiters += gasolineLiters;
+        } else if (lastOdometer == null) {
+          lastOdometer = odometerReading;
+        }
+
         lastOdometer = odometerReading;
       }
 
-      lastOdometer = odometerReading;
+      // Calcular el rendimiento promedio
+      return (totalLiters > 0) ? totalKm / totalLiters : 0.0;
+    } catch (e) {
+      print('Error al calcular el rendimiento para $email: $e');
+      return 0.0;
+    }
+  }
+
+  Future<double> calculateOverallAveragePerformance() async {
+    List<Map<String, dynamic>> employees = await getEmployees();
+    double totalPerformance = 0;
+    int count = 0;
+
+    for (var employee in employees) {
+      double performance = await calculateAveragePerformanceForEmployee(employee['email']);
+      if (performance > 0) {
+        totalPerformance += performance;
+        count++;
+      }
     }
 
-    // Calcular el rendimiento promedio
-    return (totalLiters > 0) ? totalKm / totalLiters : 0.0;
-  } catch (e) {
-    print('Error al calcular el rendimiento para $email: $e');
-    return 0.0;
+    return count > 0 ? totalPerformance / count : 0.0;
   }
-}
+
 
   Future<List<Map<String, dynamic>>> getEmployeesWithPerformance() async {
     List<Map<String, dynamic>> employees = await getEmployees();
@@ -168,26 +185,35 @@ Future<double> calculateAveragePerformanceForEmployee(String email) async {
                 ),
                 SizedBox(height: 16),
                 Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Rendimiento General',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF07154C),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        '13.5', // Placeholder de rendimiento general
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
+                  child: FutureBuilder<double>(
+                    future: calculateOverallAveragePerformance(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+                      double overallAverage = snapshot.data ?? 0.0;
+                      return Column(
+                        children: [
+                          Text(
+                            'Rendimiento General',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF07154C),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            overallAverage.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: overallAverage >= 10 ? Colors.green : Colors.red,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 SizedBox(height: 24),
