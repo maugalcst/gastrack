@@ -149,7 +149,7 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
                   } else if (rendimiento > 0) {
                     contenedorColor = const Color.fromARGB(255, 245, 212, 215);
                     rendimientoColor = Colors.red;
-                    rendimientoMessage = "Rendimiento bajo, revisar unidad";
+                    rendimientoMessage = "Rendimiento bajo";
                   } else {
                     contenedorColor = Colors.grey[300]!;
                     rendimientoColor = Colors.grey;
