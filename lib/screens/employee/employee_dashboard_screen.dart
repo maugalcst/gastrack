@@ -145,14 +145,25 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
                       ],
                     ),
                     Spacer(),
-                    Text(
-                      '82.5', // Placeholder
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                      FutureBuilder<double>(
+                        future: _calculateAveragePerformance(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return CircularProgressIndicator(); // Muestra un indicador de carga mientras se obtiene el valor
+                          }
+                          if (snapshot.hasError) {
+                            return Text('Error'); // Muestra un mensaje de error si ocurre uno
+                          }
+                          return Text(
+                            snapshot.data?.toStringAsFixed(1) ?? 'N/A', // Solo muestra el promedio de rendimiento
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: (snapshot.data ?? 0) > 10 ? Colors.green : Colors.red,
+                            ),
+                          );
+                        },
                       ),
-                    ),
                     IconButton(
                       onPressed: () {
                         _showInfoDialog(context);
@@ -237,6 +248,55 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
       ),
     );
   }
+
+  Future<double> _calculateAveragePerformance() async {
+  final userEmail = "empleado@vixo.com"; // Cambiar esto por el email del usuario autenticado
+  try {
+    // Consulta los reportes del usuario específico
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('reports')
+        .where('email', isEqualTo: userEmail)
+        .orderBy('date')
+        .get();
+
+    if (snapshot.docs.length < 2) {
+      // Si hay menos de 2 reportes válidos, no se puede calcular el rendimiento
+      return 0.0;
+    }
+
+    double totalKm = 0;
+    double totalLiters = 0;
+    int? lastOdometer;
+    int validReportCount = 0; // Contador de reportes con rendimiento válido
+
+    for (var doc in snapshot.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      int odometerReading = data['odometer_reading'] ?? 0;
+      int gasolineLiters = data['gasoline_liters'] ?? 0;
+
+      // Solo calcula la distancia si tenemos un kilometraje previo válido
+      if (lastOdometer != null && odometerReading > lastOdometer) {
+        totalKm += (odometerReading - lastOdometer);
+        totalLiters += gasolineLiters; // Solo suma litros cuando se cuenta distancia
+        validReportCount++; // Incrementa el contador de reportes válidos
+      } else if (lastOdometer == null) {
+        // Este es el primer reporte, lo usamos solo para establecer el kilometraje inicial
+        lastOdometer = odometerReading;
+      }
+
+      // Actualiza lastOdometer después de cada reporte
+      lastOdometer = odometerReading;
+    }
+
+    // Calcula el rendimiento promedio si hay litros de gasolina registrados y al menos un reporte válido
+    return (totalLiters > 0 && validReportCount > 0) ? totalKm / totalLiters : 0.0;
+  } catch (e) {
+    print('Error al calcular el rendimiento promedio: $e');
+    return 0.0; // Valor por defecto en caso de error
+  }
+}
+
+
 
   void _showReportDetails(BuildContext context, Map<String, dynamic> report) {
     showDialog(
