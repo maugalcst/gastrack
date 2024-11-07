@@ -457,7 +457,7 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
                 //Image.network(report['odometer_image_url']),
                 SizedBox(height: 10),
                 CachedNetworkImage(
-                  imageUrl: report['gasoline_receipt_image_url'],
+                  imageUrl: report['odometer_image_url'],
                   placeholder: (context, url) => CircularProgressIndicator(),
                   errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
