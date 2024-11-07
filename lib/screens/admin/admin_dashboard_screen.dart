@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gastrack_uanl/screens/admin/report_overview_screen.dart';
 import 'package:gastrack_uanl/screens/admin/performance_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:gastrack_uanl/screens/login_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
 
@@ -89,6 +91,22 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.logout,
+                color: Color.fromARGB(255, 255, 255, 255), // Color naranja
+              ),
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()), // Reemplaza con tu pantalla de login
+                );
+              },
+              tooltip: 'Cerrar sesión',
+            ),
+          ],
         ),
       ),
       body: Stack(

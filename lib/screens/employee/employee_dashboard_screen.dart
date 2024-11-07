@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart'; // Para dar formato a la fecha
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_size_text/auto_size_text.dart';  // Para auto ajustar texto
+import 'package:gastrack_uanl/screens/login_screen.dart';
 
 class EmployeeDashboardScreen extends StatefulWidget {
   @override
@@ -39,6 +40,22 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
               ),
             ),
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.logout,
+                color: Color.fromARGB(255, 255, 255, 255), // Color naranja
+              ),
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()), // Reemplaza con tu pantalla de login
+                );
+              },
+              tooltip: 'Cerrar sesión',
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -547,35 +564,18 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Todos los reportes',
+          'Todos mis reportes',
           style: TextStyle(color: Colors.white),),
         backgroundColor: Color.fromARGB(255, 7, 21, 76),
       ),
       body: Column(
         children: [
-          DropdownButton<String>(
-            value: _selectedOrder,
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedOrder = newValue!;
-              });
-            },
-            items: <String>['Fecha', 'Unidad'].map<DropdownMenuItem<String>>((
-                String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-          ),
           Expanded(
             child: StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('reports')
-                  .where('email', isEqualTo: FirebaseAuth.instance.currentUser!
-                  .email) // Filtro por el email del usuario autenticado
-                  .orderBy(_selectedOrder == 'Fecha' ? 'date' : 'unit_number',
-                  descending: true)
+                  .where('email', isEqualTo: FirebaseAuth.instance.currentUser!.email) // Filtro por el email del usuario autenticado
+                  .orderBy('date', descending: true) // Ordenar solo por fecha
                   .snapshots(),
               builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
