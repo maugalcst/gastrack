@@ -275,7 +275,7 @@ Future<Uint8List?> _downloadImage(String url) async {
                                                 ),
                                                 child: Text(
                                                   'Ver reporte',
-                                                  style: TextStyle(color: Colors.white, fontSize: 16),
+                                                  style: TextStyle(color: Colors.white, fontSize: 12),
                                                 ),
                                               ),
                                               SizedBox(width: 8),

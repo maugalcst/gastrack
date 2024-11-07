@@ -91,7 +91,6 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         count++;
       }
     }
-
     return count > 0 ? totalPerformance / count : 0.0;
   }
 
@@ -231,7 +230,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       'Filtrar por:',
                       style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
-                    SizedBox(width: 16),
+                    SizedBox(width: 6),
                     ChoiceChip(
                       label: Text(
                         'Conductor',
