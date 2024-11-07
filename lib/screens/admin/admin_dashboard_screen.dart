@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gastrack_uanl/screens/admin/report_overview_screen.dart';
 import 'package:gastrack_uanl/screens/admin/performance_screen.dart';
+import 'package:gastrack_uanl/screens/admin/create_employee.dart';
 import 'package:intl/intl.dart';
 import 'package:gastrack_uanl/screens/login_screen.dart';
 
@@ -193,41 +194,41 @@ class AdminDashboardScreen extends StatelessWidget {
                   SizedBox(height: 24),
                   // Detalles del rendimiento
                   Text(
-  'Detalles',
-  style: TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-    color: Color(0xFF07154C),
-  ),
-),
-SizedBox(height: 16),
-FutureBuilder<int>(
-  future: getEmployeeCount(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return CircularProgressIndicator();
-    }
-    return _buildDetailCard('Total de empleados', snapshot.data?.toString() ?? '0');
-  },
-),
-FutureBuilder<int>(
-  future: getUniqueUnitCount(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return CircularProgressIndicator();
-    }
-    return _buildDetailCard('Total de unidades', snapshot.data?.toString() ?? '0');
-  },
-),
-FutureBuilder<double>(
-  future: getTotalLitersConsumed(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return CircularProgressIndicator();
-    }
-    return _buildDetailCard('Litros consumidos', snapshot.data?.toStringAsFixed(2) ?? '0.0');
-  },
-),
+                  'Detalles',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF07154C),
+                  ),
+                ),
+                SizedBox(height: 16),
+                FutureBuilder<int>(
+                  future: getEmployeeCount(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    return _buildDetailCard('Total de empleados', snapshot.data?.toString() ?? '0');
+                  },
+                ),
+                FutureBuilder<int>(
+                  future: getUniqueUnitCount(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    return _buildDetailCard('Total de unidades', snapshot.data?.toString() ?? '0');
+                  },
+                ),
+                FutureBuilder<double>(
+                  future: getTotalLitersConsumed(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    return _buildDetailCard('Litros consumidos', snapshot.data?.toStringAsFixed(2) ?? '0.0');
+                  },
+                ),
 
 
                 ],
@@ -440,6 +441,13 @@ FutureBuilder<double>(
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ReportOverviewScreen()),
+                );
+              }),
+              _buildMenuItem(context, 'Crear empleado', Icons.person_add, () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CreateEmployeeScreen()),
                 );
               }),
             ],
