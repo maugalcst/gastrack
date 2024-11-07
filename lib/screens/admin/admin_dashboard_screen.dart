@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gastrack_uanl/screens/admin/report_overview_screen.dart';
 import 'package:gastrack_uanl/screens/admin/performance_screen.dart';
+import 'package:gastrack_uanl/screens/admin/create_employee.dart';
 import 'package:intl/intl.dart';
+import 'package:gastrack_uanl/screens/login_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
 
@@ -89,6 +92,22 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.logout,
+                color: Color.fromARGB(255, 255, 255, 255), // Color naranja
+              ),
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()), // Reemplaza con tu pantalla de login
+                );
+              },
+              tooltip: 'Cerrar sesión',
+            ),
+          ],
         ),
       ),
       body: Stack(
@@ -175,18 +194,43 @@ class AdminDashboardScreen extends StatelessWidget {
                   SizedBox(height: 24),
                   // Detalles del rendimiento
                   Text(
-                    'Detalles',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF07154C),
-                    ),
+                  'Detalles',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF07154C),
                   ),
-                  SizedBox(height: 16),
-                  _buildDetailCard('Total de unidades', '6'),
-                  _buildDetailCard('Kilometraje total', '45,000'),
-                  _buildDetailCard('Litros consumidos', '3,500'),
-                  _buildDetailCard('Costo total', '75,000'),
+                ),
+                SizedBox(height: 16),
+                FutureBuilder<int>(
+                  future: getEmployeeCount(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    return _buildDetailCard('Total de empleados', snapshot.data?.toString() ?? '0');
+                  },
+                ),
+                FutureBuilder<int>(
+                  future: getUniqueUnitCount(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    return _buildDetailCard('Total de unidades', snapshot.data?.toString() ?? '0');
+                  },
+                ),
+                FutureBuilder<double>(
+                  future: getTotalLitersConsumed(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    return _buildDetailCard('Litros consumidos', snapshot.data?.toStringAsFixed(2) ?? '0.0');
+                  },
+                ),
+
+
                 ],
               ),
             ),
@@ -206,6 +250,61 @@ class AdminDashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  Future<int> getEmployeeCount() async {
+    try {
+      QuerySnapshot usersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'employee')
+          .get();
+      return usersSnapshot.docs.length;
+    } catch (e) {
+      print('Error al obtener el número de empleados: $e');
+      return 0;
+    }
+  }
+
+  Future<int> getUniqueUnitCount() async {
+    try {
+      QuerySnapshot reportsSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .get();
+      Set<String> uniqueUnits = {};
+      for (var doc in reportsSnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        String unitNumber = data['unit_number'] ?? '';
+        if (unitNumber.isNotEmpty) {
+          uniqueUnits.add(unitNumber);
+        }
+      }
+      return uniqueUnits.length;
+    } catch (e) {
+      print('Error al obtener el número de unidades: $e');
+      return 0;
+    }
+  }
+
+  Future<double> getTotalLitersConsumed() async {
+    try {
+      QuerySnapshot reportsSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .get();
+      double totalLiters = 0.0;
+      for (var doc in reportsSnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        double liters = double.tryParse(data['gasoline_liters'].toString()) ?? 0.0;
+        print('Litros de gasolina leídos: $liters'); // Línea de depuración
+        totalLiters += liters;
+      }
+      print('Total de litros consumidos: $totalLiters'); // Línea de depuración
+      return totalLiters;
+    } catch (e) {
+      print('Error al obtener la cantidad total de litros consumidos: $e');
+      return 0.0;
+    }
+  }
+
+
 
   void _showInfoDialog(BuildContext context) {
   showDialog(
@@ -342,6 +441,13 @@ class AdminDashboardScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ReportOverviewScreen()),
+                );
+              }),
+              _buildMenuItem(context, 'Crear empleado', Icons.person_add, () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CreateEmployeeScreen()),
                 );
               }),
             ],
