@@ -121,7 +121,7 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
                       String email = employeeEmails.elementAt(index);
                       return _buildReportRow(
                         name: email,
-                        id: 'A32', // Placeholder, se puede actualizar si es necesario
+                         // Placeholder, se puede actualizar si es necesario
                       );
                     },
                   ),
@@ -149,16 +149,7 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
               ),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'No. Emp',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 9, 27, 100),
-              ),
-            ),
-          ),
+          
           Expanded(
             flex: 1,
             child: Text(
@@ -174,57 +165,51 @@ class _ReportOverviewScreenState extends State<ReportOverviewScreen> {
     );
   }
 
-  Widget _buildReportRow({required String name, required String id}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Text(
-                name,
-                style: TextStyle(color: Color(0xFF07154C), fontSize: 16),
-              ),
+  Widget _buildReportRow({required String name}) {
+  return Card(
+    elevation: 2,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              name,
+              style: TextStyle(color: Color(0xFF07154C), fontSize: 16),
             ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                id,
-                style: TextStyle(color: Color(0xFF07154C), fontSize: 16),
-              ),
-            ),
-            Container(
-              width: 110,
-              height: 40,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ReportDetailsScreen(
-                        employeeEmail: name, // Pasamos el email del empleado
-                      ),
+          ),
+          Container(
+            width: 110,
+            height: 40,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReportDetailsScreen(
+                      employeeEmail: name, // Pasamos el email del empleado
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 18, 90, 207),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                child: Text(
-                  'Historial',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color.fromARGB(255, 18, 90, 207),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
+              child: Text(
+                'Historial',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
